@@ -2,6 +2,7 @@ import pyspeedtest
 import pyowm
 import csv
 import datetime
+import time
 
 
 def get_broadband():
@@ -99,9 +100,14 @@ def logger():
 
 if __name__ == "__main__":
 
-    outfile = open('outfile.csv', "w")
-    writer = csv.writer(outfile)
+    print("Opening outfile.csv as 'w'")
+    try:
+        outfile = open('outfile.csv', "w")
+        writer = csv.writer(outfile)
+    except Exception as e:
+        print("Problem opening the file.")
 
+    print("Setting the base format for the file")
     writer.writerow(
         ["time", "ping", "upld", "dwnld", "temp", "temp_max", "temp_min", "windspd", "winddir", "hmdt", "clouds",
          "rain", "snow", "prss"])
@@ -111,10 +117,17 @@ if __name__ == "__main__":
 
     st = pyspeedtest.SpeedTest()
 
-    owm = pyowm.OWM(API_key='867d56c41c4381897f24da1546177a85')
-    observation = owm.weather_at_place('Ostrava, Czech Republic')
+    print("Connecting to OWM with API key and setting location to Ostrava")
+    try:
+        owm = pyowm.OWM(API_key='867d56c41c4381897f24da1546177a85')
+        observation = owm.weather_at_place('Ostrava, Czech Republic')
+    except Exception as e:
+        print("Problem connection to OWM")
 
     w = observation.get_weather()
 
-    logger()
+    while True:
+        logger()
+        print("Logger printed")
+        #time.sleep(10*60)  # OWM doesn't update more often
 
