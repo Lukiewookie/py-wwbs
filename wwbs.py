@@ -2,99 +2,50 @@ import pyspeedtest
 import pyowm
 import csv
 import datetime
-import time
 
 
 def get_broadband():
 
-    speedlist = [datetime.datetime.now()]
+    speeddict = {'time': datetime.datetime.now()}
+
+    # TODO: Add exception handling for when the is no internet
 
     print("Obtaining ping")
     ping = st.ping()
     print(ping)
 
-    speedlist.append(ping)
+    speeddict['ping'] = ping
 
     print("Obtaining download")
     download = st.download()
     print(download)
 
-    speedlist.append(download)
+    speeddict['download'] = download
 
     print("Obtaining upload")
     upload = st.upload()
     print(upload)
 
-    speedlist.append(upload)
+    speeddict['upload'] = upload
 
-    print(ping, download, upload)
-
-    return speedlist
+    return speeddict
 
 
 def get_weather():
-    weatherlist = temperature()
-    weatherlist += wind()
-    weatherlist.append(w.get_humidity())
-    weatherlist.append(w.get_clouds())
-    weatherlist += precipitation()
-    weatherlist += pressure()
-    return weatherlist
+    weatherdict = {'humidity': w.get_humidity()}
+    weatherdict.update(w.get_temperature(unit='celsius'))
+    weatherdict.update(w.get_wind())
+    weatherdict['clouds'] = w.get_clouds()
+    weatherdict['rain'] = w.get_rain()
+    weatherdict['snow']  = w.get_snow()
+    weatherdict.update(w.get_pressure())
 
-
-def wind():
-    wind_arr = []
-    wind = w.get_wind()
-
-    wind_speed = wind['speed']
-    wind_dir = wind['deg']
-
-    wind_arr.append(wind_speed)
-    wind_arr.append(wind_dir)
-
-    return wind_arr
-
-
-def temperature():
-    temp_arr = []
-    temp = w.get_temperature('celsius')
-
-    temp_avg = temp['temp']
-    temp_max = temp['temp_max']
-    temp_min = temp['temp_min']
-
-    temp_arr.append(temp_avg)
-    temp_arr.append(temp_max)
-    temp_arr.append(temp_min)
-
-    return temp_arr
-
-
-def pressure():
-    prss_arr = []
-    prss = w.get_pressure()
-
-    prss_arr.append(prss['press'])
-    return prss_arr
-
-def precipitation():
-    precp_arr = []
-    snow = w.get_snow()
-    rain = w.get_rain()
-
-    if snow == "{}":
-        snow = 0
-    elif rain == "{}":
-        rain = 0
-
-    precp_arr.append(rain)
-    precp_arr.append(snow)
-
-    return precp_arr
-
+    return weatherdict
 
 def logger():
-    output = get_broadband() + get_weather()  # List concatenation
+    output = {}
+    output.update(get_broadband())
+    output.update(get_weather())# Dict concatenation
     writer.writerow(output)
 
 
@@ -103,17 +54,15 @@ if __name__ == "__main__":
     print("Opening outfile.csv as 'w'")
     try:
         outfile = open('outfile.csv', "w")
-        writer = csv.writer(outfile)
+        fieldnames = ("time", "ping", "download", "upload", "humidity", "temp", "temp_kf", "temp_max", "temp_min", "deg", "speed", "clouds",
+         "rain", "snow", "press", "sea_level")
+        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
+        writer.writeheader()
     except Exception as e:
         print("Problem opening the file.")
 
-    print("Setting the base format for the file")
-    writer.writerow(
-        ["time", "ping", "upld", "dwnld", "temp", "temp_max", "temp_min", "windspd", "winddir", "hmdt", "clouds",
-         "rain", "snow", "prss"])
-
-    speedlist = []
-    weatherlist = []
+    speeddict = []
+    weatherdict = []
 
     st = pyspeedtest.SpeedTest()
 

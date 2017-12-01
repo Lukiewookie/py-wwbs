@@ -3,14 +3,25 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-#Nacteni dat
-data = pd.read_csv("outfile.csv")
 
-data["dwnld"] = data["dwnld"].astype("category")
-data["upld"] = data["upld"].astype("category")
+data = pd.read_csv('outfile.csv')
 
-#ax = data.plot.scatter(y="PROSPECH", x="HLUK",
-                      # title="Prospech v porovnanim s prumernym hlukem u maturit")
+data["download"].plot(secondary_y=True, label="Download")
+data["upload"].plot(secondary_y=True, label="Upload")
 
-#plt.plot(np.unique("HLUK"), np.poly1d(np.polyfit("HLUK", "PROSPECH", 1))(np.unique("HLUK")))
+data["temp"].plot(legend=True)
+data["speed"].plot(legend=True)
+data["clouds"].plot(legend=True)
+try:
+    data["rain"].plot(legend=True)
+except TypeError as e:
+    pass
+try:
+    data["snow"].plot(legend=True)
+except TypeError as e:
+    pass
+data["humidity"].plot(legend=True)
+#data["press"].plot(legend=True)
+
+plt.draw()
 plt.show()
