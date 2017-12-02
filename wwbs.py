@@ -1,30 +1,31 @@
-import pyspeedtest
-import pyowm
+#!/usr/bin/python3
+
 import csv
 import datetime
+import socket
+import sys
+import time
+from configparser import ConfigParser
+
+import pyowm
+import pyspeedtest
 
 
 def get_broadband():
-
     speeddict = {'time': datetime.datetime.now()}
-
-    # TODO: Add exception handling for when the is no internet
 
     print("Obtaining ping")
     ping = st.ping()
-    print(ping)
 
     speeddict['ping'] = ping
 
     print("Obtaining download")
     download = st.download()
-    print(download)
 
     speeddict['download'] = download
 
     print("Obtaining upload")
     upload = st.upload()
-    print(upload)
 
     speeddict['upload'] = upload
 
@@ -33,50 +34,71 @@ def get_broadband():
 
 def get_weather():
     weatherdict = {'humidity': w.get_humidity()}
+
     weatherdict.update(w.get_temperature(unit='celsius'))
     weatherdict.update(w.get_wind())
+
     weatherdict['clouds'] = w.get_clouds()
     weatherdict['rain'] = w.get_rain()
-    weatherdict['snow']  = w.get_snow()
+    weatherdict['snow'] = w.get_snow()
+
     weatherdict.update(w.get_pressure())
 
     return weatherdict
 
+
 def logger():
     output = {}
+
     output.update(get_broadband())
-    output.update(get_weather())# Dict concatenation
+    output.update(get_weather())
+
     writer.writerow(output)
 
 
 if __name__ == "__main__":
 
-    print("Opening outfile.csv as 'w'")
+    parser = ConfigParser()
+    parser.read('config.ini')
+
+    remote_server = "www.google.com"
+
     try:
-        outfile = open('outfile.csv', "w")
-        fieldnames = ("time", "ping", "download", "upload", "humidity", "temp", "temp_kf", "temp_max", "temp_min", "deg", "speed", "clouds",
-         "rain", "snow", "press", "sea_level")
+        host = socket.gethostbyname(remote_server)
+        s = socket.create_connection((host, 80), 2)
+        pass
+    except socket.gaierror:
+        print("Can't connect to internet, exiting...")
+        sys.exit()
+
+    print("Opening %s as 'w'" % parser.get('Functions', 'csv_file'))
+    try:
+        outfile = open(parser.get('Functions', 'csv_file'), "w")
+        fieldnames = (
+            "time", "ping", "download", "upload", "humidity",
+            "temp", "temp_kf", "temp_max", "temp_min", "deg",
+            "speed", "clouds", "rain", "snow", "press", "sea_level")
         writer = csv.DictWriter(outfile, fieldnames=fieldnames)
         writer.writeheader()
-    except Exception as e:
+    except RuntimeError as e:
         print("Problem opening the file.")
-
-    speeddict = []
-    weatherdict = []
+        print("error:", str(e))
 
     st = pyspeedtest.SpeedTest()
 
-    print("Connecting to OWM with API key and setting location to Ostrava")
+    print("Attempting connection to OWM...")
     try:
-        owm = pyowm.OWM(API_key='867d56c41c4381897f24da1546177a85')
-        observation = owm.weather_at_place('Ostrava, Czech Republic')
-    except Exception as e:
+        owm = pyowm.OWM(API_key=parser.get('API','API_key'))
+        observation = owm.weather_at_place(parser.get('Functions', 'location'))
+        print("Location set to %s" % parser.get('Functions', 'location'))
+    except RuntimeError as e:
         print("Problem connection to OWM")
+        print("error:", str(e))
 
     w = observation.get_weather()
 
     while True:
         logger()
         print("Logger printed")
-        #time.sleep(10*60)  # OWM doesn't update more often
-
+        print("Sleeping for %s seconds"  % parser.get('Functions', 'update_timer'))
+        time.sleep(int(parser.get('Functions', 'update_timer')))  # OWM doesn't update more often
