@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 
 data = pd.read_csv('outfile.csv')
 
-data["download"].plot(secondary_y=True, label="Download")
-data["upload"].plot(secondary_y=True, label="Upload")
+data["download"].plot(secondary_y=True, label="Download", legend="True")
+data["upload"].plot(secondary_y=True, label="Upload", legend="True")
 
 data["temp"].plot(legend=True)
 data["speed"].plot(legend=True)
