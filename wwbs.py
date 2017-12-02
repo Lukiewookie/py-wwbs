@@ -5,6 +5,7 @@ import datetime
 import socket
 import sys
 import time
+import os.path
 from configparser import ConfigParser
 
 import pyowm
@@ -71,15 +72,22 @@ if __name__ == "__main__":
         print("Can't connect to internet, exiting...")
         sys.exit()
 
-    print("Opening %s as 'w'" % parser.get('Functions', 'csv_file'))
+    fieldnames = (
+        "time", "ping", "download", "upload", "humidity",
+        "temp", "temp_kf", "temp_max", "temp_min", "deg",
+        "speed", "clouds", "rain", "snow", "press", "sea_level")
+
     try:
-        outfile = open(parser.get('Functions', 'csv_file'), "w")
-        fieldnames = (
-            "time", "ping", "download", "upload", "humidity",
-            "temp", "temp_kf", "temp_max", "temp_min", "deg",
-            "speed", "clouds", "rain", "snow", "press", "sea_level")
-        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
-        writer.writeheader()
+        if os.path.isfile('outfile.csv'):
+            print("Opening %s as 'a'" % parser.get('Functions', 'csv_file'))
+            outfile = open(parser.get('Functions', 'csv_file'), "a")
+            writer = csv.DictWriter(outfile, fieldnames=fieldnames)
+        else:
+            print("Opening %s as 'w'" % parser.get('Functions', 'csv_file'))
+            outfile = open(parser.get('Functions', 'csv_file'), "w")
+            writer = csv.DictWriter(outfile, fieldnames=fieldnames)
+            writer.writeheader()
+            print("Adding headings to file...")
     except RuntimeError as e:
         print("Problem opening the file.")
         print("error:", str(e))
