@@ -2,14 +2,19 @@
 
 import csv
 import datetime
+import os.path
+import smtplib
 import socket
 import sys
-import time
-import os.path
 from configparser import ConfigParser
+from datetime import time
+from email import encoders
 
 import pyowm
 import pyspeedtest
+from email.MIMEBase import MIMEBase
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
 
 
 def get_broadband():
@@ -55,6 +60,35 @@ def logger():
     output.update(get_weather())
 
     writer.writerow(output)
+
+
+def email_sender(msg_from, msg_to, password, heading, body):
+
+
+
+    message = MIMEMultipart()
+
+    message['From'] = msg_from
+    message['To'] = msg_to
+    message['Subject'] = heading
+
+    message.attach(MIMEText(body, 'plain'))
+
+    attachment = open(parser.get('Functions', 'csv_file'), "rb")
+
+    part = MIMEBase('application', 'octet-stream')
+    part.set_payload(attachment.read())
+    encoders.encode_base64(part)
+    part.add_header('Content-Disposition', "attachment; filename= %s" % str(parser.get('Functions', 'csv_file')))
+
+    message.attach(part)
+
+    server = smtplib.SMTP('smtp-mail.outlook.com', 587)
+    server.starttls()
+    server.login(msg_from, password)
+    text = message.as_string()
+    server.sendmail(msg_from, msg_to, text)
+    server.quit()
 
 
 if __name__ == "__main__":
@@ -110,3 +144,10 @@ if __name__ == "__main__":
         print("Logger printed")
         print("Sleeping for %s seconds"  % parser.get('Functions', 'update_timer'))
         time.sleep(int(parser.get('Functions', 'update_timer')))  # OWM doesn't update more often
+
+        if datetime.time().now() == time(21,00):
+            email_sender(parser.get('Email', 'address_from'),
+                         parser.get('Email', 'address_from'),
+                         parser.get('Email', 'password'),
+                         'Summery of py-wwbs for today',
+                         'The file is attached below. Have a good day me :)')
